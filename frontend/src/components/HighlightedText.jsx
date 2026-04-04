@@ -35,7 +35,7 @@ export default function HighlightedText({ text, annotations }) {
     if (match.startIdx > currentIndex) {
       parts.push({ type: 'text', content: text.substring(currentIndex, match.startIdx) });
     }
-    parts.push({ type: 'highlight', content: match.claim, correction: match.correction, confidence: match.confidence, id: match.id });
+    parts.push({ type: 'highlight', content: match.claim, correction: match.correction, confidence: match.confidence, source: match.source, id: match.id });
     currentIndex = match.endIdx;
   });
 
@@ -50,22 +50,28 @@ export default function HighlightedText({ text, annotations }) {
           return <span key={i}>{part.content}</span>;
         } else {
           return (
-            <mark
-              key={`mark-${part.id}-${i}`}
-              className="relative group bg-yellow-200/80 hover:bg-yellow-300 transition-colors duration-200 cursor-help rounded px-1 py-0.5 inline-block text-gray-900"
-            >
-              {part.content}
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-4 bg-gray-900 text-white text-sm rounded-xl opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200 shadow-2xl z-20 font-sans pointer-events-none text-left leading-snug tracking-normal">
-                <span className="block font-semibold mb-1 text-yellow-300 text-xs tracking-wider uppercase">AI Correction</span>
-                <span className="block text-base">{part.correction}</span>
-                {part.confidence && (
-                  <span className="block mt-3 pt-2 border-t border-gray-700/50 text-xs text-gray-400 capitalize">
-                    Confidence: <span className="text-white font-medium">{part.confidence}</span>
-                  </span>
-                )}
-                <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900"></span>
+            <span key={`mark-${part.id}-${i}`} className="block w-full my-6 bg-transparent">
+              <span className="text-red-700 bg-red-50 font-bold px-2 py-1 rounded shadow-sm border border-red-100">
+                {part.content}
               </span>
-            </mark>
+              <div className="mt-3 p-5 bg-green-50 border-l-4 border-green-500 rounded-r-xl shadow-sm font-sans text-base leading-relaxed">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-green-200/60">
+                  <span className="font-bold text-green-800 uppercase tracking-widest text-xs">AI Correction</span>
+                  {part.confidence && (
+                    <span className="inline-block bg-green-200/80 text-green-900 font-bold px-3 py-1 rounded-full text-xs box-border">
+                      {part.confidence}% Confidence
+                    </span>
+                  )}
+                </div>
+                <p className="text-green-950 font-medium text-lg">{part.correction}</p>
+                {part.source && (
+                  <div className="mt-3 text-green-800 text-sm bg-green-100/50 p-3 rounded-lg">
+                    <strong className="block text-xs uppercase tracking-wide text-green-700 mb-1">Source</strong>
+                    {part.source}
+                  </div>
+                )}
+              </div>
+            </span>
           );
         }
       })}

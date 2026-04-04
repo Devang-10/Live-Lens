@@ -5,6 +5,10 @@ const cors = require('cors');
 const { GoogleGenAI } = require('@google/genai');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 app.use(cors());
@@ -38,11 +42,30 @@ const documentSchema = new mongoose.Schema({
   annotations: [{
     claim: String,
     correction: String,
-    confidence: Number
+    confidence: Number,
+    source: String
   }]
 }, { timestamps: true });
 
 const Document = mongoose.model('Document', documentSchema);
+
+const postSchema = new mongoose.Schema({
+  author_username: String,
+  article_text: String,
+  annotations_json: String,
+  timestamp: String
+});
+
+const CommunityPost = mongoose.model('CommunityPost', postSchema);
+
+const commentSchema = new mongoose.Schema({
+  post_id: String,
+  author_username: String,
+  content: String,
+  timestamp: String
+});
+
+const CommunityComment = mongoose.model('CommunityComment', commentSchema);
 
 // ----------------------------------------------------
 // Authentication Middleware
@@ -120,7 +143,7 @@ app.post('/analyze', async (req, res) => {
     for (const paragraph of paragraphs) {
       const prompt = `System Instructions: You are a strict factual claim extraction and correction assistant.
 Extract factual claims from the following text and return a JSON array of objects.
-Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), and "confidence" (a number between 0 and 1).
+Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), "confidence" (a number between 0 and 100), and "source" (a short phrase stating where the factual truth comes from).
 If there are no false claims, return an empty array [].
 
 Text:
@@ -178,7 +201,7 @@ app.post('/api/community/post', authenticateToken, async (req, res) => {
     for (const paragraph of paragraphs) {
       const prompt = `System Instructions: You are a strict factual claim extraction and correction assistant.
 Extract factual claims from the following text and return a JSON array of objects.
-Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), and "confidence" (a number between 0 and 1).
+Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), "confidence" (a number between 0 and 100), and "source" (a short phrase stating where the factual truth comes from).
 If there are no false claims, return an empty array [].
 
 Text:
@@ -198,10 +221,103 @@ Text:
       }
     }
 
-    res.status(200).json({ annotations: allAnnotations });
+    const newPost = new CommunityPost({
+      author_username,
+      article_text,
+      annotations_json: JSON.stringify(allAnnotations),
+      timestamp: Date.now().toString()
+    });
+    await newPost.save();
+
+    res.status(200).json({ annotations: allAnnotations, post: newPost });
   } catch (error) {
     console.error('Server error during post submission:', error);
     res.status(500).json({ error: 'Internal server error while submitting post' });
+  }
+});
+
+// Analyze PDF (No Auth Required)
+app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No PDF file uploaded' });
+    }
+
+    const pdfData = await pdfParse(req.file.buffer);
+    const content = pdfData.text;
+    
+    if (!content) {
+      return res.status(400).json({ error: 'Failed to extract text from PDF' });
+    }
+
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim() !== '');
+    let allAnnotations = [];
+
+    for (const paragraph of paragraphs) {
+      const prompt = `System Instructions: You are a strict factual claim extraction and correction assistant.
+Extract factual claims from the following text and return a JSON array of objects.
+Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), "confidence" (a number between 0 and 100), and "source" (a short phrase stating where the factual truth comes from).
+If there are no false claims, return an empty array [].
+
+Text:
+"${paragraph}"`;
+
+      try {
+         const response = await ai.models.generateContent({
+           model: 'gemini-2.5-flash',
+           contents: prompt,
+           config: { responseMimeType: "application/json" }
+         });
+         
+         const parsed = JSON.parse(response.text);
+         if (Array.isArray(parsed)) allAnnotations.push(...parsed);
+      } catch (err) {
+         console.error('Error analyzing paragraph:', err);
+      }
+    }
+
+    const newDocument = new Document({ title: req.file.originalname || 'PDF Scan', content, annotations: allAnnotations });
+    await newDocument.save();
+
+    res.json({ newDocument, extractedText: content });
+  } catch (error) {
+    console.error('Server error during PDF analysis:', error);
+    res.status(500).json({ error: 'Internal server error while analyzing PDF' });
+  }
+});
+
+// Get all Community Posts
+app.get('/api/community/posts', async (req, res) => {
+  try {
+    const posts = await CommunityPost.find();
+    const comments = await CommunityComment.find();
+    res.json({ posts, comments });
+  } catch (error) {
+    console.error('Server error getting posts:', error);
+    res.status(500).json({ error: 'Internal server error while fetching posts' });
+  }
+});
+
+// Submit a Community Comment
+app.post('/api/community/comment', authenticateToken, async (req, res) => {
+  try {
+    const { post_id, content } = req.body;
+    const author_username = req.user.username;
+
+    if (!post_id || !content) return res.status(400).json({ error: 'post_id and content are required' });
+
+    const newComment = new CommunityComment({
+      post_id,
+      author_username,
+      content,
+      timestamp: Date.now().toString()
+    });
+    
+    await newComment.save();
+    res.status(200).json(newComment);
+  } catch (error) {
+    console.error('Server error posting comment:', error);
+    res.status(500).json({ error: 'Internal server error while posting comment' });
   }
 });
 

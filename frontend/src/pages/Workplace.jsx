@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Search, CheckCircle2 } from 'lucide-react';
+import { Loader2, Search, CheckCircle2, UploadCloud } from 'lucide-react';
 import HighlightedText from '../components/HighlightedText';
 import { DbConnection } from '../module_bindings/index.ts';
 
@@ -67,10 +67,49 @@ export default function Workplace() {
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
       }
+      
+      const data = await response.json();
+      setArticleText(data.content);
+      setAnnotations(data.annotations);
+      setScannedText(data.content);
     } catch (err) {
       console.error(err);
       setError("Failed to scan article. Please try again.");
+    } finally {
       setIsScanning(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/analyze-pdf', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setArticleText(data.extractedText);
+      setAnnotations(data.newDocument.annotations);
+      setScannedText(data.extractedText);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to analyze PDF. Please try again.");
+    } finally {
+      setIsScanning(false);
+      e.target.value = null; // reset
     }
   };
 
@@ -79,7 +118,7 @@ export default function Workplace() {
       <section className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           <h2 className="text-4xl font-extrabold tracking-tight text-gray-900">Scan & Verify</h2>
-          <p className="text-xl text-gray-500 font-light">Paste your article below to instantly highlight and check claims with AI.</p>
+          <p className="text-xl text-gray-500 font-light">Paste your article or upload a PDF below to instantly highlight and check claims with AI.</p>
         </div>
 
         <div className="relative group">
@@ -92,23 +131,30 @@ export default function Workplace() {
         </div>
 
         <div className="flex items-center justify-between">
-          <button
-            onClick={handleScan}
-            disabled={isScanning || !articleText.trim()}
-            className="inline-flex items-center gap-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium px-8 py-4 rounded-full shadow-md hover:shadow-xl transition-all active:scale-[0.98] text-lg"
-          >
-            {isScanning ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Analyzing Text...
-              </>
-            ) : (
-              <>
-                <Search className="w-5 h-5" />
-                Scan Article
-              </>
-            )}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleScan}
+              disabled={isScanning || !articleText.trim()}
+              className="inline-flex items-center gap-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-medium px-8 py-4 rounded-full shadow-md hover:shadow-xl transition-all active:scale-[0.98] text-lg"
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Analyzing Text...
+                </>
+              ) : (
+                <>
+                  <Search className="w-5 h-5" />
+                  Scan Article
+                </>
+              )}
+            </button>
+            <label className="inline-flex items-center gap-2.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 cursor-pointer font-medium px-8 py-4 rounded-full shadow-md hover:shadow-xl transition-all active:scale-[0.98] text-lg">
+              <UploadCloud className="w-5 h-5" />
+              Upload PDF
+              <input type="file" accept="application/pdf" className="hidden" onChange={handleFileUpload} disabled={isScanning} />
+            </label>
+          </div>
 
           {error && (
             <span className="text-red-500 font-medium px-4 py-2 bg-red-50 rounded-lg">{error}</span>

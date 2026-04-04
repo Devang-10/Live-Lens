@@ -4,12 +4,13 @@ import HighlightedText from './HighlightedText';
 import { Send, MessageSquare } from 'lucide-react';
 import { DbConnection } from '../module_bindings/index.ts';
 
-export default function PostCard({ post, comments }) {
+export default function PostCard({ post, comments, onRefresh }) {
   const { user } = useContext(AuthContext);
   const [newComment, setNewComment] = useState('');
   const [showComments, setShowComments] = useState(false);
 
-  const postComments = comments.filter(c => c.postId === post.id || c.post_id === post.id);
+  const postId = post._id || post.id;
+  const postComments = comments.filter(c => c.postId === postId || c.post_id === postId);
   
   let annotations = [];
   try {
@@ -24,21 +25,25 @@ export default function PostCard({ post, comments }) {
     e.preventDefault();
     if (!newComment.trim() || !user) return;
 
-    const timestamp = Date.now().toString();
-    const commentId = Math.random().toString(36).substring(7);
-
     try {
-      const conn = DbConnection.connection;
-      if (conn) {
-        conn.reducers.addComment({
-           id: commentId,
-           postId: post.id || post.post_id,
-           authorUsername: user.username,
-           content: newComment,
-           timestamp: timestamp
-        });
+      const response = await fetch('http://localhost:3001/api/community/comment', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          post_id: postId,
+          content: newComment
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post comment');
       }
+
       setNewComment('');
+      if (onRefresh) onRefresh();
     } catch (err) {
       console.error(err);
     }

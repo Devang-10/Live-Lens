@@ -13,45 +13,26 @@ export default function CommunityHub() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const conn = DbConnection.builder()
-      .withUri('http://127.0.0.1:3000')
-      .withDatabaseName('live-lens-db')
-      .onConnect(() => {
-        console.log("Connected to SpacetimeDB (Community Hub)");
-      })
-      .build();
-
-    const sub = conn.subscriptionBuilder()
-      .onApplied(() => {})
-      .subscribe("SELECT * FROM Post; SELECT * FROM Comment;");
-
-    const refreshPosts = () => {
-      const allPosts = [];
-      for (const p of conn.db.Post.iter()) allPosts.push(p);
-      allPosts.sort((a, b) => parseInt(b.timestamp || '0') - parseInt(a.timestamp || '0'));
-      setPosts(allPosts);
-    };
-
-    const refreshComments = () => {
-      const allComments = [];
-      for (const c of conn.db.Comment.iter()) allComments.push(c);
-      allComments.sort((a, b) => parseInt(a.timestamp || '0') - parseInt(b.timestamp || '0'));
-      setComments(allComments);
-    };
-
-    const postInsertCb = conn.db.Post.onInsert(() => refreshPosts());
-    const postDeleteCb = conn.db.Post.onDelete(() => refreshPosts());
-    const commentInsertCb = conn.db.Comment.onInsert(() => refreshComments());
-    const commentDeleteCb = conn.db.Comment.onDelete(() => refreshComments());
-
-    return () => {
-      conn.db.Post.removeOnInsert(postInsertCb);
-      conn.db.Post.removeOnDelete(postDeleteCb);
-      conn.db.Comment.removeOnInsert(commentInsertCb);
-      conn.db.Comment.removeOnDelete(commentDeleteCb);
-      conn.disconnect();
-    };
+    fetchPosts();
   }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/community/posts');
+      if (res.ok) {
+        const data = await res.json();
+        const allPosts = data.posts || [];
+        allPosts.sort((a, b) => parseInt(b.timestamp || '0') - parseInt(a.timestamp || '0'));
+        setPosts(allPosts);
+        
+        const allComments = data.comments || [];
+        allComments.sort((a, b) => parseInt(a.timestamp || '0') - parseInt(b.timestamp || '0'));
+        setComments(allComments);
+      }
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    }
+  };
 
   const handleSubmitPost = async (e) => {
     e.preventDefault();
@@ -77,19 +58,8 @@ export default function CommunityHub() {
         throw new Error(data.error || 'Failed to submit post');
       }
 
-      // Publish directly over SpacetimeDB WebSockets using the native auto-generated reducers!
-      const conn = DbConnection.connection;
-      if (conn) {
-         conn.reducers.submitPost({
-            id: Math.random().toString(36).substring(7),
-            authorUsername: user.username,
-            articleText: newPostText,
-            annotationsJson: JSON.stringify(data.annotations),
-            timestamp: Date.now().toString()
-         });
-      }
-
       setNewPostText('');
+      fetchPosts(); // Refresh feed immediately
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -150,7 +120,7 @@ export default function CommunityHub() {
           </div>
         ) : (
           posts.map(post => (
-            <PostCard key={post.id} post={post} comments={comments} />
+            <PostCard key={post._id || post.id} post={post} comments={comments} onRefresh={fetchPosts} />
           ))
         )}
       </div>
