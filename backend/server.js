@@ -87,7 +87,10 @@ Text:
       await fetch('http://127.0.0.1:3000/v1/database/live-lens-db/call/broadcast_scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([content, JSON.stringify(allAnnotations)])
+        body: JSON.stringify({ 
+          article_text: content, 
+          annotations_json: JSON.stringify(allAnnotations) 
+        })
       });
       console.log('Successfully called broadcast_scan reducer in SpacetimeDB');
     } catch (dbErr) {
