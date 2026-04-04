@@ -1,0 +1,19 @@
+﻿spacetime-engine/spacetimedb/src/index.ts(1,25): error TS2305: Module '"spacetimedb/server"' has no exported member 't'.
+spacetime-engine/spacetimedb/src/index.ts(11,1): error TS1295: ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'. Adjust the 'type' field in the nearest 'package.json' to make this file an ECMAScript module, or adjust your 'verbatimModuleSyntax', 'module', and 'moduleResolution' settings in TypeScript.
+spacetime-engine/spacetimedb/src/index.ts(13,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+spacetime-engine/spacetimedb/src/index.ts(13,38): error TS7006: Parameter '_ctx' implicitly has an 'any' type.
+spacetime-engine/spacetimedb/src/index.ts(17,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+spacetime-engine/spacetimedb/src/index.ts(17,54): error TS7006: Parameter '_ctx' implicitly has an 'any' type.
+spacetime-engine/spacetimedb/src/index.ts(21,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+spacetime-engine/spacetimedb/src/index.ts(21,60): error TS7006: Parameter '_ctx' implicitly has an 'any' type.
+spacetime-engine/spacetimedb/src/index.ts(25,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+spacetime-engine/spacetimedb/src/index.ts(27,4): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+spacetime-engine/spacetimedb/src/index.ts(27,11): error TS7031: Binding element 'name' implicitly has an 'any' type.
+spacetime-engine/spacetimedb/src/index.ts(32,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+spacetime-engine/spacetimedb/src/index.ts(32,45): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/index.ts(1,34): error TS2307: Cannot find module 'spacetimedb/server' or its corresponding type declarations.
+src/index.ts(20,1): error TS1287: A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when 'verbatimModuleSyntax' is enabled.
+src/index.ts(22,4): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/index.ts(22,11): error TS7031: Binding element 'article_text' implicitly has an 'any' type.
+src/index.ts(22,25): error TS7031: Binding element 'annotations_json' implicitly has an 'any' type.
+src/index.ts(31,1): error TS1295: ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'. Adjust the 'type' field in the nearest 'package.json' to make this file an ECMAScript module, or adjust your 'verbatimModuleSyntax', 'module', and 'moduleResolution' settings in TypeScript.

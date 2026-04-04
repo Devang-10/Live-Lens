@@ -1,0 +1,4 @@
+﻿src/index.ts(1,25): error TS2305: Module '"spacetimedb/server"' has no exported member 't'.
+src/index.ts(22,4): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/index.ts(22,11): error TS7031: Binding element 'article_text' implicitly has an 'any' type.
+src/index.ts(22,25): error TS7031: Binding element 'annotations_json' implicitly has an 'any' type.

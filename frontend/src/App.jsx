@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Search, Zap, CheckCircle2 } from 'lucide-react';
 import './index.css';
+
+// TODO: Import your SpacetimeDB module bindings here once generated
+// import { Annotations } from './module_bindings/annotations.js';
 
 // Component to render text with highlighted claims
 const HighlightedText = ({ text, annotations }) => {
@@ -87,6 +90,32 @@ export default function App() {
   const [annotations, setAnnotations] = useState([]);
   const [scannedText, setScannedText] = useState("");
   const [error, setError] = useState(null);
+
+  // --- SpacetimeDB Multiplayer Real-time Listener ---
+  useEffect(() => {
+    // This callback fires whenever a new row is inserted into the Annotations table
+    const onAnnotationsInsert = (ctx, newRow) => {
+      // Assuming newRow has standard column names (content, annotations, etc.)
+      const incomingText = newRow.content || newRow.text || "";
+      const incomingAnnotations = newRow.annotations || newRow.results || [];
+      
+      // Automatically update the editor's text
+      setArticleText(incomingText);
+      // Update annotations array
+      setAnnotations(incomingAnnotations);
+      // This immediately un-hides the Reading View, skipping the manual 'Scan Article' button click
+      setScannedText(incomingText);
+    };
+
+    // Subscribes to the insert event on the Annotations table
+    // Uncomment these below lines once your bindings are imported:
+    // Annotations.onInsert(onAnnotationsInsert);
+
+    // Cleanup subscription when the component unmounts
+    return () => {
+      // Annotations.removeOnInsert(onAnnotationsInsert);
+    };
+  }, []);
 
   const handleScan = async () => {
     if (!articleText.trim()) return;

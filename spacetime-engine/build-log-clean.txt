@@ -1,0 +1,31 @@
+﻿spacetime : [CONFIGURATION
+_FIELD_CONFLICT] Warning: 
+`compilerOptions.verbatimM
+oduleSyntax` from 
+`tsconfig.json` is 
+overridden by 
+`onlyRemoveTypeImports` 
+from 
+`transform.typescript` 
+which has higher 
+priority. Please make 
+sure this is what you 
+expected.
+At line:1 char:1
++ spacetime build > 
+build-log.txt 2>&1; node 
+-e "const fs = 
+require('fs ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: ([  
+  CONFIGURATION_...t yo   
+ u expected.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+Build finished successfully.
