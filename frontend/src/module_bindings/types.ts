@@ -10,10 +10,28 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const Comment = __t.object("Comment", {
+  id: __t.string(),
+  postId: __t.string(),
+  authorUsername: __t.string(),
+  content: __t.string(),
+  timestamp: __t.string(),
+});
+export type Comment = __Infer<typeof Comment>;
+
 export const GlobalScan = __t.object("GlobalScan", {
   senderId: __t.string(),
   articleText: __t.string(),
   annotationsJson: __t.string(),
 });
 export type GlobalScan = __Infer<typeof GlobalScan>;
+
+export const Post = __t.object("Post", {
+  id: __t.string(),
+  authorUsername: __t.string(),
+  articleText: __t.string(),
+  annotationsJson: __t.string(),
+  timestamp: __t.string(),
+});
+export type Post = __Infer<typeof Post>;
 

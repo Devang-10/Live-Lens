@@ -1,0 +1,11 @@
+[CONFIGURATION_FIELD_CONFLICT] Warning: `compilerOptions.verbatimModuleSyntax` from `tsconfig.json` is overridden by `onlyRemoveTypeImports` from `transform.typescript` which has higher priority. Please make sure this is what you expected.
+
+Build finished successfully.
+Uploading to http://127.0.0.1:3000 => http://127.0.0.1:3000
+Checking for breaking changes...
+Error: error sending request for url (http://127.0.0.1:3000/v1/database/live-lens-db/pre_publish?pretty_print_style=AnsiColor&host_type=Js)
+
+Caused by:
+    0: client error (Connect)
+    1: tcp connect error
+    2: No connection could be made because the target machine actively refused it. (os error 10061)

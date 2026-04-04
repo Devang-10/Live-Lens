@@ -6,7 +6,11 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AddCommentReducer from "../add_comment_reducer";
 import BroadcastScanReducer from "../broadcast_scan_reducer";
+import SubmitPostReducer from "../submit_post_reducer";
 
+export type AddCommentParams = __Infer<typeof AddCommentReducer>;
 export type BroadcastScanParams = __Infer<typeof BroadcastScanReducer>;
+export type SubmitPostParams = __Infer<typeof SubmitPostReducer>;
 

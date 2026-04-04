@@ -34,17 +34,28 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AddCommentReducer from "./add_comment_reducer";
 import BroadcastScanReducer from "./broadcast_scan_reducer";
+import SubmitPostReducer from "./submit_post_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import CommentRow from "./comment_table";
 import GlobalScanRow from "./global_scan_table";
+import PostRow from "./post_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  Comment: __table({
+    name: 'Comment',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CommentRow),
   GlobalScan: __table({
     name: 'GlobalScan',
     indexes: [
@@ -52,11 +63,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, GlobalScanRow),
+  Post: __table({
+    name: 'Post',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, PostRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("add_comment", AddCommentReducer),
   __reducerSchema("broadcast_scan", BroadcastScanReducer),
+  __reducerSchema("submit_post", SubmitPostReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

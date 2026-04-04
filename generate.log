@@ -1,0 +1,14 @@
+Generating TypeScript module bindings for module spacetime-engine
+[CONFIGURATION_FIELD_CONFLICT] Warning: `compilerOptions.verbatimModuleSyntax` from `tsconfig.json` is overridden by `onlyRemoveTypeImports` from `transform.typescript` which has higher priority. Please make sure this is what you expected.
+
+Build finished successfully.
+Writing file frontend\src\module_bindings\comment_table.ts
+Writing file frontend\src\module_bindings\post_table.ts
+Writing file frontend\src\module_bindings\add_comment_reducer.ts
+Writing file frontend\src\module_bindings\submit_post_reducer.ts
+Writing file frontend\src\module_bindings\index.ts
+Creating directory frontend\src\module_bindings\types
+Writing file frontend\src\module_bindings\types/reducers.ts
+Creating directory frontend\src\module_bindings\types
+Writing file frontend\src\module_bindings\types.ts
+Generate finished successfully.
