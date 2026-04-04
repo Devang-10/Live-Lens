@@ -82,6 +82,21 @@ Text:
     
     await newDocument.save();
 
+    // Call SpacetimeDB REST API to trigger broadcast_scan reducer
+    try {
+      await fetch('http://127.0.0.1:3000/v1/database/live-lens-db/call/broadcast_scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          article_text: content, 
+          annotations_json: JSON.stringify(allAnnotations) 
+        })
+      });
+      console.log('Successfully called broadcast_scan reducer in SpacetimeDB');
+    } catch (dbErr) {
+      console.error('Error calling SpacetimeDB:', dbErr);
+    }
+
     // Return the complete document object as the response
     res.json(newDocument);
 
