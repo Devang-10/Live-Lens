@@ -7,11 +7,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
+const { generateFactBotReply } = require('./communityBot');
+
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
@@ -74,7 +81,7 @@ const CommunityComment = mongoose.model('CommunityComment', commentSchema);
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  
+
   if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -150,16 +157,16 @@ Text:
 "${paragraph}"`;
 
       try {
-         const response = await ai.models.generateContent({
-           model: 'gemini-2.5-flash',
-           contents: prompt,
-           config: { responseMimeType: "application/json" }
-         });
-         
-         const parsed = JSON.parse(response.text);
-         if (Array.isArray(parsed)) allAnnotations.push(...parsed);
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+        });
+
+        const parsed = JSON.parse(response.text);
+        if (Array.isArray(parsed)) allAnnotations.push(...parsed);
       } catch (err) {
-         console.error('Error analyzing paragraph:', err);
+        console.error('Error analyzing paragraph:', err);
       }
     }
 
@@ -170,9 +177,9 @@ Text:
       await fetch('http://127.0.0.1:3000/v1/database/live-lens-db/call/broadcast_scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          article_text: content, 
-          annotations_json: JSON.stringify(allAnnotations) 
+        body: JSON.stringify({
+          article_text: content,
+          annotations_json: JSON.stringify(allAnnotations)
         })
       });
     } catch (dbErr) {
@@ -189,49 +196,79 @@ Text:
 // Community Post Submission (Auth Required)
 app.post('/api/community/post', authenticateToken, async (req, res) => {
   try {
+    console.log('1. Route hit');
     const { article_text } = req.body;
     const author_username = req.user.username;
 
     if (!article_text) return res.status(400).json({ error: 'article_text is required' });
 
-    const paragraphs = article_text.split(/\n\s*\n/).filter(p => p.trim() !== '');
-    let allAnnotations = [];
-
-    // Analyze text with AI
-    for (const paragraph of paragraphs) {
-      const prompt = `System Instructions: You are a strict factual claim extraction and correction assistant.
-Extract factual claims from the following text and return a JSON array of objects.
-Each object MUST have exactly these keys: "claim" (the false or misleading statement found), "correction" (the factual truth), "confidence" (a number between 0 and 100), and "source" (a short phrase stating where the factual truth comes from).
-If there are no false claims, return an empty array [].
-
-Text:
-"${paragraph}"`;
-
-      try {
-         const response = await ai.models.generateContent({
-           model: 'gemini-2.5-flash',
-           contents: prompt,
-           config: { responseMimeType: "application/json" }
-         });
-         
-         const parsed = JSON.parse(response.text);
-         if (Array.isArray(parsed)) allAnnotations.push(...parsed);
-      } catch (err) {
-         console.error('Error analyzing paragraph:', err);
-      }
-    }
-
+    console.log('2. Saving to Mongo');
+    // 1. Save the user's post to MongoDB
     const newPost = new CommunityPost({
       author_username,
       article_text,
-      annotations_json: JSON.stringify(allAnnotations),
       timestamp: Date.now().toString()
     });
     await newPost.save();
 
-    res.status(200).json({ annotations: allAnnotations, post: newPost });
+    // 2. Broadcast the new post via SpacetimeDB
+    try {
+      await fetch('http://127.0.0.1:3000/v1/database/live-lens-db/call/broadcast_post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_username: newPost.author_username,
+          article_text: newPost.article_text,
+          timestamp: newPost.timestamp
+        })
+      });
+    } catch (error) {
+      console.error('Error broadcasting post to SpacetimeDB:', error);
+      console.error(error);
+    }
+
+    // Return success to the client immediately
+    res.status(200).json({ post: newPost });
+
+    console.log('3. Calling Gemini Bot');
+    // 3. Asynchronously call the Gemini Fact-Bot
+    generateFactBotReply(article_text).then(async (botReply) => {
+      if (botReply) {
+        // 4. Automatically create a new 'Comment' authored by 'LiveLens Bot'
+        const newComment = new CommunityComment({
+          post_id: newPost._id.toString(),
+          author_username: 'LiveLens Bot',
+          content: botReply,
+          timestamp: Date.now().toString()
+        });
+        await newComment.save();
+
+        // 5. Broadcast the new bot comment via SpacetimeDB
+        console.log('4. Broadcasting to SpacetimeDB');
+        try {
+          await fetch('http://127.0.0.1:3000/v1/database/live-lens-db/call/broadcast_comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              post_id: newComment.post_id,
+              author_username: newComment.author_username,
+              content: newComment.content,
+              timestamp: newComment.timestamp
+            })
+          });
+        } catch (error) {
+          console.error('Error broadcasting bot comment to SpacetimeDB:', error);
+          console.error(error);
+        }
+      }
+    }).catch(error => {
+      console.error('FactBot Async Error:', error);
+      console.error(error);
+    });
+
   } catch (error) {
     console.error('Server error during post submission:', error);
+    console.error(error);
     res.status(500).json({ error: 'Internal server error while submitting post' });
   }
 });
@@ -245,7 +282,7 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
 
     const pdfData = await pdfParse(req.file.buffer);
     const content = pdfData.text;
-    
+
     if (!content) {
       return res.status(400).json({ error: 'Failed to extract text from PDF' });
     }
@@ -263,16 +300,16 @@ Text:
 "${paragraph}"`;
 
       try {
-         const response = await ai.models.generateContent({
-           model: 'gemini-2.5-flash',
-           contents: prompt,
-           config: { responseMimeType: "application/json" }
-         });
-         
-         const parsed = JSON.parse(response.text);
-         if (Array.isArray(parsed)) allAnnotations.push(...parsed);
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+        });
+
+        const parsed = JSON.parse(response.text);
+        if (Array.isArray(parsed)) allAnnotations.push(...parsed);
       } catch (err) {
-         console.error('Error analyzing paragraph:', err);
+        console.error('Error analyzing paragraph:', err);
       }
     }
 
@@ -312,7 +349,7 @@ app.post('/api/community/comment', authenticateToken, async (req, res) => {
       content,
       timestamp: Date.now().toString()
     });
-    
+
     await newComment.save();
     res.status(200).json(newComment);
   } catch (error) {

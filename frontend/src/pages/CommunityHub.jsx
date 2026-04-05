@@ -14,6 +14,8 @@ export default function CommunityHub() {
 
   useEffect(() => {
     fetchPosts();
+    const intervalId = setInterval(fetchPosts, 3000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchPosts = async () => {
@@ -36,6 +38,7 @@ export default function CommunityHub() {
 
   const handleSubmitPost = async (e) => {
     e.preventDefault();
+    console.log("---- UI: SUBMIT BUTTON CLICKED ----");
     if (!newPostText.trim()) return;
 
     setIsSubmitting(true);
@@ -54,6 +57,8 @@ export default function CommunityHub() {
       });
 
       const data = await response.json();
+      console.log("---- UI: SERVER RESPONSE ----", data);
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit post');
       }

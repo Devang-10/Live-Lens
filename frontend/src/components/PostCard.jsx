@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import HighlightedText from './HighlightedText';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, Bot } from 'lucide-react';
 import { DbConnection } from '../module_bindings/index.ts';
 
 export default function PostCard({ post, comments, onRefresh }) {
@@ -86,13 +86,26 @@ export default function PostCard({ post, comments, onRefresh }) {
           <div className="mt-4 space-y-4 pl-2 border-l-2 border-yellow-200">
             {postComments.map((c, i) => {
               const cAuthor = c.authorUsername || c.author_username;
+              const isBot = cAuthor === 'LiveLens Bot';
+              
               return (
-                <div key={i} className="bg-gray-50 p-4 pt-3 rounded-2xl rounded-tl-none">
+                <div 
+                  key={i} 
+                  className={`p-4 pt-3 rounded-2xl rounded-tl-none ${isBot ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}
+                >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="font-semibold text-gray-900 text-sm">{cAuthor}</span>
-                    <span className="text-xs text-gray-400 font-medium">{new Date(parseInt(c.timestamp || '0')).toLocaleDateString()}</span>
+                    {isBot && <Bot className="w-4 h-4 text-blue-500" />}
+                    <span className={`font-semibold text-sm ${isBot ? 'text-blue-800' : 'text-gray-900'}`}>
+                      {cAuthor}
+                    </span>
+                    {isBot && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-widest">Verified</span>}
+                    <span className="text-xs text-gray-400 font-medium">
+                      {new Date(parseInt(c.timestamp || '0')).toLocaleDateString()}
+                    </span>
                   </div>
-                  <p className="text-gray-700 text-sm">{c.content}</p>
+                  <p className={`text-sm ${isBot ? 'text-blue-900 font-medium leading-relaxed' : 'text-gray-700'}`}>
+                    {c.content}
+                  </p>
                 </div>
               );
             })}
